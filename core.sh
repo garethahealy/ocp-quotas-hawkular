@@ -24,8 +24,12 @@ for project in "${PROJECTS_ARRAY[@]}" ; do
                     ITEM_KEY=$(echo $ITEM | jq '.key' | tr -d '"')
                     ITEM_VALUE=$(echo $ITEM | jq '.value' | tr -d '"')
 
-                    METRIC_ID=$QUOTA_NAMESPACE/$QUOTA_NAME/$ITEM_KEY
-                    echo "Hard; $METRIC_ID/$ITEM_VALUE"
+                    METRIC_ID="$QUOTA_NAMESPACE-$QUOTA_NAME-$ITEM_KEY"
+                    echo "Hard; $METRIC_ID = $ITEM_VALUE"
+
+                    HAWKULAR_URL="https://hawkular-metrics.apps.10.2.2.2.xip.io/hawkular/metrics"
+                    HAWKULAR_TOKEN=$(oc whoami -t)
+                    HAWKULAR_TENANT="custom"
 
                     CREATE_JSON_PAYLOAD=$(cat <<EOF
 {
@@ -35,45 +39,40 @@ for project in "${PROJECTS_ARRAY[@]}" ; do
     "quota" : "true"
   },
   "type" : "counter",
-  "tenantId" : "custom"
+  "tenantId" : "$HAWKULAR_TENANT"
 }
 EOF
 )
 
                     ADD_JSON_PAYLOAD=$(cat <<EOF
-[{
-  "id" : "$METRIC_ID",
-  "tags" : {
-    "namespace" : "$QUOTA_NAMESPACE",
-    "quota" : "true"
-  },
-  "type" : "counter",
-  "tenantId" : "custom",
-  "dataPoints" : [ {
-    "timestamp" : $(date +%s),
-    "value" : $ITEM_VALUE,
+[
+  {
+    "timestamp": $(date +%s%N | cut -b1-13),
+    "value": $ITEM_VALUE,
     "tags" : {
       "namespace" : "$QUOTA_NAMESPACE",
       "quota" : "true"
     }
-  } ]
-}]
+  }
+]
 EOF
 )
 
-                    # Create metric and the post datapoint
-                    echo $CREATE_JSON_PAYLOAD | curl -k -s -f -X POST -H "Content-Type: application/json" -H "Hawkular-Tenant: custom" -H "Authorization: Bearer EKEOuAiS9hRGXQgECzdnRK0J3WRDy8gKItkcCsLE81M" https://hawkular-metrics.apps.10.2.2.2.xip.io/hawkular/metrics/counters -d @-
-                    echo $ADD_JSON_PAYLOAD | curl -k -X POST -H "Content-Type: application/json" -H "Hawkular-Tenant: custom" -H "Authorization: Bearer EKEOuAiS9hRGXQgECzdnRK0J3WRDy8gKItkcCsLE81M" https://hawkular-metrics.apps.10.2.2.2.xip.io/hawkular/metrics/counters/raw -d @-
+                    # Check metric does exist and create
+                    HTTP_STATUS=$(curl -k -X GET --write-out %{http_code} --silent --output /dev/null -H "Content-Type: application/json" -H "Hawkular-Tenant: $HAWKULAR_TENANT" -H "Authorization: Bearer $HAWKULAR_TOKEN" $HAWKULAR_URL/counters/$METRIC_ID)
+                    if [ $HTTP_STATUS == "204" ]; then
+                        echo $CREATE_JSON_PAYLOAD | curl -k -X POST -H "Content-Type: application/json" -H "Hawkular-Tenant: $HAWKULAR_TENANT" -H "Authorization: Bearer $HAWKULAR_TOKEN" $HAWKULAR_URL/counters -d @-
+                    fi
+
+                    # Create datapoints
+                    echo $ADD_JSON_PAYLOAD | curl -k -X POST -H "Content-Type: application/json" -H "Hawkular-Tenant: $HAWKULAR_TENANT" -H "Authorization: Bearer $HAWKULAR_TOKEN" $HAWKULAR_URL/counters/$METRIC_ID/raw -d @-
                 done
             fi
 
-            QUOTA_USED=$(echo $QUOTA | jq '.status.used | to_entries')
-            if [ ! -z ${QUOTA_USED+x} ]; then
-                echo "Used RAW"
-                #$QUOTA_USED
-            fi
+            #QUOTA_USED=$(echo $QUOTA | jq '.status.used | to_entries')
+            #if [ ! -z ${QUOTA_USED+x} ]; then
+            #    $QUOTA_USED
+            #fi
         done
     fi
 done
-
-
