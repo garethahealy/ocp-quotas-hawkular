@@ -28,8 +28,8 @@ for project in "${PROJECTS_ARRAY[@]}" ; do
                     echo "Hard; $METRIC_ID = $ITEM_VALUE"
 
                     HAWKULAR_URL="https://hawkular-metrics.apps.10.2.2.2.xip.io/hawkular/metrics"
-                    HAWKULAR_TOKEN=$(oc whoami -t)
-                    HAWKULAR_TENANT="custom"
+                    HAWKULAR_TOKEN=$(oc sa get-token default -n grafana)
+                    HAWKULAR_TENANT="grafana"
 
                     CREATE_JSON_PAYLOAD=$(cat <<EOF
 {
