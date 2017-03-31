@@ -1,0 +1,10 @@
+sudo: required
+dist: trusty
+addons:
+  apt:
+    sources:
+    - debian-sid # Grab ShellCheck from the Debian repo
+    packages:
+    - shellcheck
+script:
+- find . -type f -name "*.sh" -exec shellcheck {} \;
