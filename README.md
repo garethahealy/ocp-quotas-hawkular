@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/garethahealy/ocp-quotas-hawkular.svg?branch=master)](https://travis-ci.org/garethahealy/ocp-quotas-hawkular)
 [![License](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)]()
 
 # ocp-quotas-hawkular
