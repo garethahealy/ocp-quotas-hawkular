@@ -5,7 +5,7 @@
 A PoC to look into retrieving quotas from OCP and pushing into Hawkular Metrics so they can be viewed by grafana
 
 ## tenant config
-https://docs.openshift.com/container-platform/3.3/admin_guide/multiproject_quota.html#multi-project-quotas-viewing-applicable-clusterresourcequotas
+- https://docs.openshift.com/container-platform/3.10/admin_guide/multiproject_quota.html#multi-project-quotas-viewing-applicable-clusterresourcequotas
 - oc new-project grafana
 - oc adm policy add-role-to-user edit system:serviceaccount:grafana:default
 - oc sa new-token default
